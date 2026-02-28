@@ -36,4 +36,4 @@ WiFi Signal → Signal Processing → Feature Extraction → ML Model → Backen
 - Cloud-based monitoring system
 - Reduction of wildlife collisions
 
-## 📁 Project Structure
+
