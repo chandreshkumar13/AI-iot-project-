@@ -1,18 +1,18 @@
 from fastapi import APIRouter, HTTPException
-from schemas.detection_schema import DetectionRequest
+from schemas.csi_schema import CSIRequest
 from services.csi_service import analyze_signal
 
 router = APIRouter()
 
 @router.post("/detect")
-def detect_animal(request: DetectionRequest):
+def detect(request: CSIRequest):
     try:
-        result = analyze_signal(request.features)
-
+        result = analyze_signal(request.csi_matrix)
         return {
             "status": "success",
-            "prediction": result
+            "result": result
         }
-
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
