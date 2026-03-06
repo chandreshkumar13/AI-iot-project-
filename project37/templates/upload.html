@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Upload CSI Data{% endblock %}
+{% block head %}
+<style>
+.conf-high{color:#00ff88;}.conf-med{color:#ffc107;}.conf-low{color:#dc3545;}
+.row-alert{background:rgba(220,53,69,.10)!important;}
+.row-correct{border-left:3px solid #00ff88;}.row-wrong{border-left:3px solid #dc3545;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-cloud-upload-fill me-2 text-success"></i>Upload CSI Data File</h4>
+  <a href="{{url_for('dashboard')}}" class="btn btn-sm btn-outline-success">Dashboard</a>
+</div>
+<div class="card csi-card p-4 mb-4">
+  <p class="text-muted mb-3">Upload a <strong>.parquet</strong> or <strong>.csv</strong> file with CSI data. Each row = one 5-second window (500 frames x 52 subcarriers = 26,000 features). If a label column is present, accuracy will be calculated.</p>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label">CSI File <span class="text-muted small">(.parquet or .csv)</span></label>
+        <input type="file" name="datafile" class="form-control" accept=".parquet,.csv" required/>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Location Label <span class="text-muted small">(optional)</span></label>
+        <input type="text" name="location" class="form-control" placeholder="e.g. Road A, Test Site"/>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-cpu-fill me-2"></i>Run Predictions</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% if results is defined and results %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card csi-card p-3" style="border-left:4px solid #00ff88;">
+    <div class="text-muted small">Rows Processed</div>
+    <div class="fs-3 fw-bold text-success">{{total_rows}}</div>
+  </div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card csi-card p-3" style="border-left:4px solid #dc3545;">
+    <div class="text-muted small">Alerts Triggered</div>
+    <div class="fs-3 fw-bold text-danger">{{alert_count}}</div>
+  </div></div>
+  {% if label_col %}
+  <div class="col-sm-6 col-lg-3"><div class="card csi-card p-3" style="border-left:4px solid #0dcaf0;">
+    <div class="text-muted small">Correct Predictions</div>
+    <div class="fs-3 fw-bold text-info">{{correct_count}} / {{total_rows}}</div>
+    <div class="text-muted small">{{"%.1f"|format(correct_count/total_rows*100)}}% accuracy</div>
+  </div></div>
+  {% endif %}
+  <div class="col-sm-6 col-lg-3"><div class="card csi-card p-3" style="border-left:4px solid #ffc107;">
+    <div class="text-muted small">File</div>
+    <div class="fw-bold text-warning text-truncate">{{filename}}</div>
+  </div></div>
+</div>
+<div class="card csi-card p-3 mb-4">
+  <h6 class="mb-3"><i class="bi bi-bar-chart-fill me-2 text-info"></i>Prediction Distribution</h6>
+  <canvas id="distChart" height="80"></canvas>
+</div>
+<div class="card csi-card p-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0"><i class="bi bi-table me-2 text-warning"></i>Row-by-Row Predictions</h6>
+    <span class="text-muted small">{{total_rows}} rows</span>
+  </div>
+  <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+    <table class="table table-dark table-hover table-sm align-middle mb-0">
+      <thead class="table-secondary" style="position:sticky;top:0;z-index:1;">
+        <tr>
+          <th>Row</th><th>Predicted</th><th>Confidence</th>
+          {% if label_col %}<th>True Label</th><th>Match</th>{% endif %}
+          <th>Alert</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="{% if r.alert %}row-alert {% endif %}{% if label_col %}{% if r.correct %}row-correct{% else %}row-wrong{% endif %}{% endif %}">
+          <td class="text-muted">{{r.row}}</td>
+          <td><span class="badge bg-secondary">{{r.class_name}}</span></td>
+          <td class="{% if r.confidence >= 80 %}conf-high{% elif r.confidence >= 60 %}conf-med{% else %}conf-low{% endif %} fw-bold">{{r.confidence}}%</td>
+          {% if label_col %}
+          <td>{{r.true_name}}</td>
+          <td>{% if r.correct %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+          {% endif %}
+          <td>{% if r.alert %}<span class="badge bg-danger">ALERT</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if results is defined and results %}
+<script>
+const classCounts = {{class_counts | tojson}};
+const classColors = {{class_colors | tojson}};
+
+const labels = Object.keys(classCounts);
+const data   = Object.values(classCounts);
+const colors = labels.map(l => classColors[l] || '#6c757d');
+new Chart(document.getElementById('distChart'), {
+  type: 'bar',
+  data: { labels, datasets: [{ label: 'Count', data, backgroundColor: colors, borderRadius: 4 }] },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#aaa' }, grid: { color: '#333' } },
+      y: { ticks: { color: '#aaa' }, grid: { color: '#333' } }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}
