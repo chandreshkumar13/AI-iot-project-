@@ -10,37 +10,34 @@ from models import User, Detection
 
 
 def create_app():
-    app = Flask(__name__)
+    app=Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
     login_manager.init_app(app)
     bcrypt.init_app(app)
-    login_manager.login_view = "auth.login"
-    login_manager.login_message = "Please log in to access this page."
-    login_manager.login_message_category = "warning"
+    login_manager.login_view="auth.login"
+    login_manager.login_message="Please log in to access this page."
+    login_manager.login_message_category="warning"
     from auth import auth_bp
     app.register_blueprint(auth_bp)
     ml_model = _load_model(app.config["MODEL_PATH"])
 
-    # ── Helper: base detection query scoped to current user ───────────
+   
     def _det_query():
-        """
-        Admins see everything.
-        Regular users see: their own uploads + all ESP32 detections (user_id=None or system role).
-        """
-        if current_user.role == "admin":
+       
+        if current_user.role=="admin":
             return Detection.query
-        system_user = User.query.filter_by(role="system").first()
-        system_id   = system_user.id if system_user else -1
+        system_user=User.query.filter_by(role="system").first()
+        system_id=system_user.id if system_user else -1
         from sqlalchemy import or_
         return Detection.query.filter(
             or_(
-                Detection.user_id == current_user.id,   # their own uploads
-                Detection.user_id == system_id,          # ESP32 live detections
+                Detection.user_id==current_user.id,
+                Detection.user_id == system_id,
             )
         )
 
-    # ── Routes ─────────────────────────────────────────────────────────
+    
     @app.route("/")
     def index():
         return render_template("index.html")
@@ -48,11 +45,11 @@ def create_app():
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        q      = _det_query()
-        recent = q.order_by(Detection.timestamp.desc()).limit(10).all()
-        total  = q.count()
-        alerts = q.filter_by(alert_triggered=True).count()
-        return render_template("dashboard.html", detections=recent, total=total,
+        q=_det_query()
+        recent=q.order_by(Detection.timestamp.desc()).limit(10).all()
+        total=q.count()
+        alerts=q.filter_by(alert_triggered=True).count()
+        return render_template("dashboard.html",detections=recent,total=total,
             alert_count=alerts, refresh_interval=Config.REFRESH_INTERVAL,
             class_colors=Config.CLASS_COLORS,
             model_loaded=(ml_model is not None))
@@ -60,61 +57,61 @@ def create_app():
     @app.route("/history")
     @login_required
     def history():
-        page         = request.args.get("page", 1, type=int)
-        class_filter = request.args.get("class", "")
-        q            = _det_query().order_by(Detection.timestamp.desc())
+        page=request.args.get("page", 1, type=int)
+        class_filter=request.args.get("class", "")
+        q=_det_query().order_by(Detection.timestamp.desc())
         if class_filter:
-            q = q.filter_by(class_name=class_filter)
-        pagination = q.paginate(page=page, per_page=25, error_out=False)
+            q=q.filter_by(class_name=class_filter)
+        pagination=q.paginate(page=page, per_page=25, error_out=False)
         return render_template("history.html", pagination=pagination,
             class_filter=class_filter, class_names=Config.CLASS_NAMES)
 
     @app.route("/admin/users")
     @login_required
     def admin_users():
-        if current_user.role != "admin":
+        if current_user.role!="admin":
             abort(403)
-        users = User.query.filter(User.role != "system").order_by(User.created_at.desc()).all()
+        users=User.query.filter(User.role != "system").order_by(User.created_at.desc()).all()
         return render_template("admin_users.html", users=users)
 
     @app.route("/admin/users/<int:user_id>/toggle", methods=["POST"])
     @login_required
     def toggle_user(user_id):
-        if current_user.role != "admin":
+        if current_user.role!="admin":
             abort(403)
-        user = User.query.get_or_404(user_id)
-        if user.id == current_user.id:
+        user=User.query.get_or_404(user_id)
+        if user.id==current_user.id:
             return jsonify({"error": "Cannot disable yourself"}), 400
-        if user.role == "system":
+        if user.role=="system":
             return jsonify({"error": "Cannot modify system user"}), 400
-        user.is_active = not user.is_active
+        user.is_active=not user.is_active
         db.session.commit()
         return jsonify({"status": "ok", "is_active": user.is_active})
 
-    @app.route("/api/esp32/data", methods=["POST"])
+    @app.route("/api/esp32/data",methods=["POST"])
     def esp32_data():
-        payload = request.get_json(silent=True)
+        payload=request.get_json(silent=True)
         if not payload or "csi" not in payload:
             return jsonify({"error": "Missing CSI data"}), 400
-        csi_raw   = np.array(payload["csi"], dtype=np.float32)
-        device_id = payload.get("device_id", "ESP32-01")
-        location  = payload.get("location",  "Road Sensor 1")
+        csi_raw=np.array(payload["csi"], dtype=np.float32)
+        device_id=payload.get("device_id", "ESP32-01")
+        location=payload.get("location",  "Road Sensor 1")
         try:
-            predicted_class, confidence = _run_inference(ml_model, csi_raw)
+            predicted_class,confidence=_run_inference(ml_model, csi_raw)
         except RuntimeError as e:
             return jsonify({"error": str(e)}), 503
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
 
-        # Assign to the dedicated system user
-        system_user = User.query.filter_by(role="system").first()
-        system_id   = system_user.id if system_user else None
+        
+        system_user=User.query.filter_by(role="system").first()
+        system_id=system_user.id if system_user else None
 
-        class_name      = Config.CLASS_NAMES[predicted_class]
-        alert_triggered = predicted_class in Config.ALERT_CLASSES
-        det = Detection(predicted_class=predicted_class, class_name=class_name,
-            confidence=confidence, alert_triggered=alert_triggered,
-            device_id=device_id, location=location, user_id=system_id)
+        class_name=Config.CLASS_NAMES[predicted_class]
+        alert_triggered=predicted_class in Config.ALERT_CLASSES
+        det=Detection(predicted_class=predicted_class, class_name=class_name,
+            confidence=confidence,alert_triggered=alert_triggered,
+            device_id=device_id,location=location,user_id=system_id)
         db.session.add(det)
         db.session.commit()
         return jsonify({"status": "ok", "id": det.id,
@@ -124,14 +121,14 @@ def create_app():
     @app.route("/api/latest")
     @login_required
     def api_latest():
-        q          = _det_query()
-        detections = q.order_by(Detection.timestamp.desc()).limit(20).all()
-        total      = q.count()
-        alerts     = q.filter_by(alert_triggered=True).count()
-        class_counts = {name: q.filter_by(class_name=name).count()
+        q=_det_query()
+        detections=q.order_by(Detection.timestamp.desc()).limit(20).all()
+        total=q.count()
+        alerts=q.filter_by(alert_triggered=True).count()
+        class_counts={name: q.filter_by(class_name=name).count()
                         for name in Config.CLASS_NAMES.values()}
-        last      = q.order_by(Detection.timestamp.desc()).first()
-        last_seen = last.timestamp.strftime("%H:%M:%S") if last else "N/A"
+        last=q.order_by(Detection.timestamp.desc()).first()
+        last_seen=last.timestamp.strftime("%H:%M:%S") if last else "N/A"
         return jsonify({"timeline": [d.to_dict() for d in detections],
             "total": total, "alerts": alerts, "class_counts": class_counts,
             "last_seen": last_seen, "class_colors": Config.CLASS_COLORS})
@@ -139,36 +136,36 @@ def create_app():
     @app.route("/upload", methods=["GET", "POST"])
     @login_required
     def upload():
-        if request.method == "GET":
+        if request.method=="GET":
             return render_template("upload.html")
 
-        uploaded = request.files.get("datafile")
-        location = request.form.get("location", "File Upload").strip() or "File Upload"
+        uploaded=request.files.get("datafile")
+        location=request.form.get("location", "File Upload").strip() or "File Upload"
 
         if not uploaded or uploaded.filename == "":
             flash("Please select a file to upload.", "danger")
             return render_template("upload.html")
 
-        fname = uploaded.filename.lower()
+        fname=uploaded.filename.lower()
         if not (fname.endswith(".parquet") or fname.endswith(".csv")):
             flash("Only .parquet or .csv files are supported.", "danger")
             return render_template("upload.html")
 
         try:
-            raw_bytes = uploaded.read()
+            raw_bytes=uploaded.read()
             if fname.endswith(".parquet"):
-                df = pd.read_parquet(io.BytesIO(raw_bytes), engine="pyarrow")
+                df=pd.read_parquet(io.BytesIO(raw_bytes), engine="pyarrow")
             else:
-                df = pd.read_csv(io.BytesIO(raw_bytes))
+                df=pd.read_csv(io.BytesIO(raw_bytes))
         except Exception as e:
             flash(f"Could not read file: {e}", "danger")
             return render_template("upload.html")
 
-        label_col = next((c for c in ["label","class","target","y"] if c in df.columns), None)
-        feat_cols = [c for c in df.columns if c != label_col]
-        EXPECTED  = Config.TIME_STEPS * Config.SUBCARRIERS
+        label_col=next((c for c in ["label","class","target","y"] if c in df.columns), None)
+        feat_cols=[c for c in df.columns if c != label_col]
+        EXPECTED=Config.TIME_STEPS * Config.SUBCARRIERS
 
-        if len(feat_cols) != EXPECTED:
+        if len(feat_cols)!=EXPECTED:
             flash(f"Expected {EXPECTED} feature columns, found {len(feat_cols)}.", "danger")
             return render_template("upload.html")
 
@@ -176,39 +173,39 @@ def create_app():
             flash("Model is not loaded. Place model file in the project folder and restart.", "danger")
             return render_template("upload.html")
 
-        # ── Batch inference ────────────────────────────────────────────
-        X = df[feat_cols].values.astype("float32")
+       
+        X=df[feat_cols].values.astype("float32")
 
         if isinstance(ml_model, dict):
-            feats  = _extract_features(X)
-            scaled = ml_model["scaler"].transform(feats)
-            pca_x  = ml_model["pca"].transform(scaled)
-            probs  = ml_model["model"].predict_proba(pca_x)
+            feats=_extract_features(X)
+            scaled=ml_model["scaler"].transform(feats)
+            pca_x=ml_model["pca"].transform(scaled)
+            probs=ml_model["model"].predict_proba(pca_x)
         else:
-            mu     = X.mean(axis=1, keepdims=True)
-            std    = X.std(axis=1,  keepdims=True) + 1e-8
-            X_norm = ((X - mu) / std).reshape(-1, Config.TIME_STEPS, Config.SUBCARRIERS, 1)
+            mu=X.mean(axis=1, keepdims=True)
+            std=X.std(axis=1,  keepdims=True) + 1e-8
+            X_norm=((X - mu) / std).reshape(-1, Config.TIME_STEPS, Config.SUBCARRIERS, 1)
             try:
-                probs = ml_model.predict(X_norm, batch_size=32, verbose=0)
+                probs=ml_model.predict(X_norm, batch_size=32, verbose=0)
             except Exception as e:
                 flash(f"Prediction error: {e}", "danger")
                 return render_template("upload.html")
 
-        pred_classes = probs.argmax(axis=1)
-        confidences  = probs.max(axis=1)
-        true_labels  = df[label_col].values.astype(int) if label_col else None
+        pred_classes=probs.argmax(axis=1)
+        confidences=probs.max(axis=1)
+        true_labels=df[label_col].values.astype(int) if label_col else None
 
-        results          = []
-        batch_detections = []
+        results=[]
+        batch_detections=[]
 
         for idx in range(len(df)):
-            pred_class = int(pred_classes[idx])
-            confidence = float(confidences[idx])
-            class_name = Config.CLASS_NAMES[pred_class]
-            alert      = pred_class in Config.ALERT_CLASSES
-            true_label = int(true_labels[idx]) if true_labels is not None else None
-            true_name  = Config.CLASS_NAMES.get(true_label) if true_label is not None else None
-            correct    = (pred_class == true_label) if true_label is not None else None
+            pred_class=int(pred_classes[idx])
+            confidence=float(confidences[idx])
+            class_name=Config.CLASS_NAMES[pred_class]
+            alert=pred_class in Config.ALERT_CLASSES
+            true_label=int(true_labels[idx]) if true_labels is not None else None
+            true_name=Config.CLASS_NAMES.get(true_label) if true_label is not None else None
+            correct=(pred_class == true_label) if true_label is not None else None
             results.append({
                 "row": idx + 1,
                 "class_name": class_name,
@@ -221,18 +218,18 @@ def create_app():
                 predicted_class=pred_class, class_name=class_name,
                 confidence=confidence, alert_triggered=alert,
                 device_id="File-Upload", location=location,
-                user_id=current_user.id,   # ← scoped to uploader
+                user_id=current_user.id,
             ))
 
         db.session.bulk_save_objects(batch_detections)
         db.session.commit()
 
-        total_rows   = len(results)
-        alert_count  = sum(1 for r in results if r["alert"])
-        class_counts = {}
+        total_rows=len(results)
+        alert_count=sum(1 for r in results if r["alert"])
+        class_counts={}
         for r in results:
-            class_counts[r["class_name"]] = class_counts.get(r["class_name"], 0) + 1
-        correct_count = sum(1 for r in results if r["correct"]) if label_col else None
+            class_counts[r["class_name"]]=class_counts.get(r["class_name"], 0) + 1
+        correct_count=sum(1 for r in results if r["correct"]) if label_col else None
 
         flash(f"Processed {total_rows} rows. {alert_count} alerts triggered.", "success")
         return render_template("upload.html",
@@ -276,9 +273,9 @@ def create_app():
     return app
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 # DB migration — adds user_id column to existing detections if missing
-# ══════════════════════════════════════════════════════════════════════════
+
 def _migrate_db():
     from sqlalchemy import text, inspect
     inspector = inspect(db.engine)
@@ -299,9 +296,9 @@ def _migrate_db():
             print(f"[CSI] Assigned {unowned} existing detections to admin")
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 # Seed admin + system user
-# ══════════════════════════════════════════════════════════════════════════
+
 def _seed_users():
     from extensions import bcrypt as _bc
 
@@ -324,9 +321,6 @@ def _seed_users():
         print("[CSI] System user created for ESP32 detections")
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# Keras model builder (kept for .keras fallback loading)
-# ══════════════════════════════════════════════════════════════════════════
 def _build_model():
     import tensorflow as tf
     from tensorflow.keras import layers, regularizers
