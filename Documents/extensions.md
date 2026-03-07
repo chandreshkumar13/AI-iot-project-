@@ -8,7 +8,7 @@ db=SQLAlchemy()
 login_manager=LoginManager()
 bcrypt=Bcrypt()
 ```
-That's literally the whole file.
+That's literally the whole file
 ---
 ## Why Does This File Exist?
 In Flask, extensions like SQLAlchemy and Flask-Login need to be initialised with the app object (`db.init_app(app)`), but they also need to be imported by `models.py` to define the database tables.
