@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}My ESP32 Device Token{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-8">
+
+    <h4 class="mb-4"><i class="bi bi-cpu me-2"></i>ESP32 Device Token</h4>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="card csi-card mb-4">
+      <div class="card-header text-muted fw-semibold" style="background:#f1f8e9; border-bottom:1px solid #c3e0c3;">Your Unique Device Token</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          Use this token in your ESP32 code so the server knows the data belongs to you.
+          <strong>Keep it secret</strong> — anyone with this token can post data to your account.
+        </p>
+        <div class="input-group mb-3">
+          <input type="text" id="tokenField" class="form-control font-monospace"
+                 value="{{ token.token }}" readonly>
+          <button class="btn btn-outline-secondary" onclick="copyToken()" title="Copy">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+        <p class="text-muted small">
+          <i class="bi bi-clock me-1"></i>Generated: {{ token.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+        </p>
+      </div>
+    </div>
+
+    <div class="card csi-card mb-4">
+      <div class="card-header text-muted fw-semibold" style="background:#f1f8e9; border-bottom:1px solid #c3e0c3;">How to Use in Your ESP32 Code</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">Include the token in your JSON payload:</p>
+        <pre style="background:#f1f8e9; color:#1b5e20; border:1px solid #c3e0c3;"><code>HTTPClient http;
+http.begin("http://&lt;server-ip&gt;:5000/api/esp32/data");
+http.addHeader("Content-Type", "application/json");
+
+String payload = "{";
+payload += "\"token\": \"{{ token.token }}\",";
+payload += "\"device_id\": \"ESP32-01\",";
+payload += "\"location\": \"My Sensor\",";
+payload += "\"csi\": [" + csiDataString + "]";
+payload += "}";
+
+http.POST(payload);</code></pre>
+        <p class="text-muted small mt-2">Or send it as a header instead:</p>
+        <pre style="background:#f1f8e9; color:#1b5e20; border:1px solid #c3e0c3;"><code>http.addHeader("X-Device-Token", "{{ token.token }}");</code></pre>
+      </div>
+    </div>
+
+    <div class="card csi-card mb-4" style="border-color:#f48fb1;">
+      <div class="card-header text-danger fw-semibold" style="background:#fce4ec; border-bottom:1px solid #f48fb1;"><i class="bi bi-exclamation-triangle me-1"></i>Regenerate Token</div>
+      <div class="card-body">
+        <p class="text-muted small">
+          If your token is compromised, regenerate it here.
+          <strong>Your ESP32 code must be updated with the new token after regenerating.</strong>
+        </p>
+        <form method="POST" action="{{ url_for('regenerate_token') }}"
+              onsubmit="return confirm('Regenerate token? Your ESP32 will stop working until updated.');">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-arrow-clockwise me-1"></i>Regenerate Token
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function copyToken() {
+  const field = document.getElementById('tokenField');
+  navigator.clipboard.writeText(field.value).then(() => {
+    const btn = field.nextElementSibling;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-people-fill me-2 text-info"></i>User Management</h4>
+  <a href="{{url_for('auth.register')}}" class="btn btn-sm btn-success">Add User</a>
+</div>
+<div class="card csi-card p-3">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover align-middle">
+      <thead class="table-secondary">
+        <tr><th>#</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="text-muted">{{u.id}}</td>
+          <td>{{u.username}}</td>
+          <td>{{u.email}}</td>
+          <td>
+            {% if u.id != current_user.id %}
+            <select class="form-select form-select-sm role-select" data-uid="{{u.id}}"
+                    style="width:110px;">
+              <option value="viewer"   {% if u.role=='viewer'   %}selected{% endif %}>Viewer</option>
+              <option value="operator" {% if u.role=='operator' %}selected{% endif %}>Operator</option>
+              <option value="admin"    {% if u.role=='admin'    %}selected{% endif %}>Admin</option>
+            </select>
+            {% else %}
+            <span class="badge role-badge-{{u.role}}">{{u.role|capitalize}}</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{u.created_at.strftime('%Y-%m-%d')}}</td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge bg-success">Active</span>
+            {% else %}
+            <span class="badge bg-secondary">Disabled</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.id != current_user.id %}
+            <button class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                    onclick="toggleUser({{u.id}}, this)">
+              {% if u.is_active %}Disable{% else %}Enable{% endif %}
+            </button>
+            {% else %}
+            <span class="text-muted small">You</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Toggle active/disabled
+function toggleUser(id, btn) {
+  fetch(`/admin/users/${id}/toggle`, {method:"POST"})
+    .then(r => r.json())
+    .then(() => location.reload())
+    .catch(console.error);
+}
+
+// Change role on dropdown change
+document.querySelectorAll('.role-select').forEach(sel => {
+  sel.addEventListener('change', function() {
+    const uid  = this.dataset.uid;
+    const role = this.value;
+    fetch(`/admin/users/${uid}/role`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({role})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        alert(data.error);
+        location.reload();
+      } else {
+        // Flash a quick visual confirmation
+        this.style.borderColor = "#4caf50";
+        setTimeout(() => this.style.borderColor = "", 1500);
+      }
+    })
+    .catch(console.error);
+  });
+});
+</script>
+{% endblock %}

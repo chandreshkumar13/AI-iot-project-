@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --env-bg:         #f2f8f2;
+  --env-surface:    #ffffff;
+  --env-border:     #c3e0c3;
+  --env-green:      #2e7d32;
+  --env-green-mid:  #4caf50;
+  --env-green-soft: #a5d6a7;
+  --env-green-pale: #e8f5e9;
+  --env-sky:        #e3f2fd;
+  --env-text:       #1b2e1c;
+  --env-muted:      #5a7a5b;
+  --env-accent:     #388e3c;
+  --env-leaf:       #66bb6a;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--env-bg);
+  background-image:
+    radial-gradient(ellipse at 10% 0%, rgba(165,214,167,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse at 90% 100%, rgba(200,230,201,0.2) 0%, transparent 55%);
+  color: var(--env-text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Navbar ───────────────────────────────────────────────────────── */
+.csi-navbar {
+  background: linear-gradient(90deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
+  border-bottom: 3px solid var(--env-green-soft);
+  box-shadow: 0 3px 18px rgba(46,125,50,0.18);
+}
+.csi-navbar .navbar-brand {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  color: #ffffff !important;
+  letter-spacing: 0.3px;
+}
+.csi-navbar .nav-link {
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.csi-navbar .nav-link:hover,
+.csi-navbar .nav-link.active {
+  color: #b9f6ca !important;
+}
+.csi-navbar .nav-link.active {
+  border-bottom: 2px solid #b9f6ca;
+}
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+.csi-card {
+  background-color: var(--env-surface);
+  border: 1px solid var(--env-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(46,125,50,0.07);
+  transition: box-shadow 0.2s;
+}
+.csi-card:hover {
+  box-shadow: 0 4px 20px rgba(46,125,50,0.13);
+}
+
+/* ── Stat cards ───────────────────────────────────────────────────── */
+.stat-card {
+  border-left: 4px solid var(--env-green-mid) !important;
+  background: linear-gradient(135deg, #ffffff 60%, #f1f8e9) !important;
+}
+
+/* ── Role badges ──────────────────────────────────────────────────── */
+.role-badge-admin    { background:#2e7d32; color:#fff; padding:.25em .6em; border-radius:.4em; font-size:.8em; font-weight:600; }
+.role-badge-operator { background:#558b2f; color:#fff; padding:.25em .6em; border-radius:.4em; font-size:.8em; font-weight:600; }
+.role-badge-viewer   { background:#78909c; color:#fff; padding:.25em .6em; border-radius:.4em; font-size:.8em; font-weight:600; }
+
+/* ── Form inputs ──────────────────────────────────────────────────── */
+.form-control, .form-select {
+  background-color: #f9fdf9;
+  border-color: var(--env-border);
+  color: var(--env-text);
+}
+.form-control:focus, .form-select:focus {
+  background-color: #ffffff;
+  border-color: var(--env-green-mid);
+  color: var(--env-text);
+  box-shadow: 0 0 0 .2rem rgba(76,175,80,0.2);
+}
+.input-group-text {
+  background-color: var(--env-green-pale);
+  border-color: var(--env-border);
+  color: var(--env-green);
+}
+.form-label {
+  color: var(--env-muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────── */
+.table { color: var(--env-text); }
+.table-dark {
+  --bs-table-bg: #ffffff;
+  --bs-table-striped-bg: #f1f8e9;
+  --bs-table-hover-bg: #e8f5e9;
+  --bs-table-color: var(--env-text);
+  --bs-table-border-color: var(--env-border);
+}
+.table-secondary {
+  --bs-table-bg: var(--env-green-pale);
+  color: var(--env-green);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.table-danger {
+  --bs-table-bg: #fce4ec !important;
+  --bs-table-color: #b71c1c !important;
+}
+
+/* ── Alerts ───────────────────────────────────────────────────────── */
+.alert-success { background-color: var(--env-green-pale); border-color: var(--env-green-soft); color: var(--env-green); }
+.alert-danger  { background-color: #fce4ec; border-color: #f48fb1; color: #b71c1c; }
+.alert-warning { background-color: #fffde7; border-color: #fff176; color: #795548; }
+.alert-info    { background-color: var(--env-sky); border-color: #90caf9; color: #1565c0; }
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.btn-success { background-color: var(--env-green); border-color: var(--env-green); color: #fff; }
+.btn-success:hover { background-color: #1b5e20; border-color: #1b5e20; }
+.btn-outline-success { color: var(--env-green); border-color: var(--env-green); }
+.btn-outline-success:hover { background-color: var(--env-green); color: #fff; }
+.btn-outline-secondary { color: var(--env-muted); border-color: var(--env-border); }
+.btn-outline-secondary:hover { background-color: var(--env-green-pale); color: var(--env-green); border-color: var(--env-green-soft); }
+.btn-outline-light { color: #fff; border-color: rgba(255,255,255,0.6); }
+.btn-outline-light:hover { background-color: rgba(255,255,255,0.15); color: #fff; }
+.btn-outline-danger { color: #c62828; border-color: #c62828; }
+.btn-outline-danger:hover { background-color: #c62828; color: #fff; }
+
+/* ── Badges ───────────────────────────────────────────────────────── */
+.badge.bg-success   { background-color: var(--env-green) !important; }
+.badge.bg-secondary { background-color: #78909c !important; }
+.badge.bg-danger    { background-color: #c62828 !important; }
+.badge.bg-warning   { background-color: #f9a825 !important; color:#1a1a1a !important; }
+.badge.bg-info      { background-color: #0277bd !important; }
+
+/* ── Pagination ───────────────────────────────────────────────────── */
+.page-link { color: var(--env-green); border-color: var(--env-border); background-color: #fff; }
+.page-link:hover { background-color: var(--env-green-pale); color: var(--env-green); border-color: var(--env-green-soft); }
+.page-item.active .page-link { background-color: var(--env-green); border-color: var(--env-green); color: #fff; }
+.page-item.disabled .page-link { color: var(--env-muted); }
+
+/* ── Typography ───────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 { font-family: 'Nunito', sans-serif; font-weight: 700; color: var(--env-text); }
+.text-success { color: var(--env-green) !important; }
+.text-muted   { color: var(--env-muted) !important; }
+.text-info    { color: #0277bd !important; }
+.text-warning { color: #e65100 !important; }
+.text-danger  { color: #c62828 !important; }
+.text-light   { color: #ffffff !important; }
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+.csi-footer {
+  border-top: 2px solid var(--env-border);
+  background: linear-gradient(90deg, #f1f8e9, #ffffff, #f1f8e9);
+  color: var(--env-muted);
+}
+
+/* ── Code blocks ──────────────────────────────────────────────────── */
+pre, code { background-color: #f1f8e9; color: #1b5e20; border-radius: 6px; }
+pre { border: 1px solid var(--env-border); padding: 1rem; }
+
+/* ── Pulse ────────────────────────────────────────────────────────── */
+.pulse { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--env-bg); }
+::-webkit-scrollbar-thumb { background: var(--env-green-soft); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--env-green-mid); }
+
+/* ── Misc ─────────────────────────────────────────────────────────── */
+.navbar-toggler { border-color: rgba(255,255,255,0.4); }
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+hr { border-color: var(--env-border); opacity: 1; }
+.bg-dark { background-color: var(--env-surface) !important; border: 1px solid var(--env-border) !important; color: var(--env-text) !important; }
+.border-secondary { border-color: var(--env-border) !important; }
+.text-secondary { color: var(--env-muted) !important; }
+.bg-black { background-color: #f1f8e9 !important; }
+.font-monospace { color: var(--env-green) !important; }
