@@ -7,8 +7,6 @@ from flask_login import login_required, current_user
 from config import Config
 from extensions import db, login_manager, bcrypt
 from models import User, Detection, DeviceToken
-
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
