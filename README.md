@@ -57,7 +57,7 @@ DOI: [10.5281/zenodo.8266462](https://doi.org/10.5281/zenodo.8266462)
 ---
 ## Project File Structure
 ```
-project37_v3_green/
+project37/
 │
 ├── app.py                  ← Main application file, all routes, ML inference
 ├── models.py               ← Database table definitions
